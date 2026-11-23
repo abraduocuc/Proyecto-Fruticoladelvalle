@@ -1,0 +1,6 @@
+{
+  "name": "SGI Packing - Gestión de Inventario Frutícola",
+  "description": "Sistema simple de gestión de inventario frutícola, cámaras de frío, ingresos, salidas y trazabilidad de lotes en HTML.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

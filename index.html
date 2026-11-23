@@ -1,0 +1,3379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGI Packing — Sistema de Gestión de Inventario Frutícola</title>
+  <meta name="description" content="Sistema simple de gestión de inventario frutícola, cámaras de frío, ingresos, salidas y trazabilidad de lotes." />
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --surface: #ffffff;
+      --surface-soft: #f1f5f9;
+      --surface-tint: #eff6ff;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #0b1c30;
+      --text-muted: #475569;
+      --text-subtle: #64748b;
+      --forest-dark: #0b3529;
+      --forest: #143d32;
+      --forest-hover: #0f2f27;
+      --forest-light: #e6f4ef;
+      --emerald: #059669;
+      --emerald-bg: #ecfdf5;
+      --emerald-text: #065f46;
+      --cold: #0284c7;
+      --cold-bg: #f0f9ff;
+      --cold-text: #0369a1;
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --amber-text: #92400e;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --red-text: #991b1b;
+      --cherry-bg: #ffe4e6;
+      --cherry-text: #9f1239;
+      --grape-bg: #ede9fe;
+      --grape-text: #5b21b6;
+      --apple-bg: #dcfce7;
+      --apple-text: #166534;
+      --kiwi-bg: #fef9c3;
+      --kiwi-text: #854d0e;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(11, 28, 48, 0.04);
+      --shadow-md: 0 8px 24px -4px rgba(20, 61, 50, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    button, input, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    /* Utilities */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .wrap { flex-wrap: wrap; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+    .text-right { text-align: right; }
+    .text-muted { color: var(--text-muted); }
+    .text-subtle { color: var(--text-subtle); }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+
+    /* Login View */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background: radial-gradient(circle at top center, #eaf5f0 0%, var(--bg) 55%);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .login-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--forest);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .login-kicker {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--emerald-text);
+      background: var(--emerald-bg);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-subtle);
+      font-weight: 400;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 12px;
+      color: var(--text-subtle);
+      pointer-events: none;
+      display: flex;
+    }
+
+    .input, .select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #f8fafc;
+      color: var(--text);
+      transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-with-icon {
+      padding-left: 38px;
+    }
+
+    .input:focus, .select:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: var(--emerald);
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    }
+
+    .input-action-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--forest);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid transparent;
+      transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-sm {
+      min-height: 36px;
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: var(--forest);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--forest-hover);
+    }
+
+    .btn-emerald {
+      background: var(--emerald);
+      color: #ffffff;
+    }
+
+    .btn-emerald:hover {
+      background: #047857;
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-soft);
+    }
+
+    .btn-soft {
+      background: var(--emerald-bg);
+      color: var(--emerald-text);
+      border-color: #a7f3d0;
+    }
+
+    .btn-soft:hover {
+      background: #d1fae5;
+    }
+
+    .btn-danger-soft {
+      background: var(--red-bg);
+      color: var(--red-text);
+      border-color: #fecaca;
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .rfid-box {
+      margin-top: 20px;
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .login-footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--text-subtle);
+      text-align: center;
+    }
+
+    /* App Layout */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 256px;
+      background: var(--forest-dark);
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 30;
+    }
+
+    .sidebar-brand {
+      padding: 20px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .sidebar-brand-sub {
+      font-size: 11px;
+      color: #99c4b5;
+      margin-top: 2px;
+    }
+
+    .nav-section-title {
+      padding: 18px 18px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7fa899;
+    }
+
+    .nav-list {
+      padding: 0 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: #d1e7df;
+      font-size: 13.5px;
+      font-weight: 500;
+      text-align: left;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .nav-btn.active {
+      background: var(--emerald);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .nav-tag {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #a7f3d0;
+      color: #064e3b;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px;
+    }
+
+    .plant-card {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 12px;
+      color: #cde3db;
+    }
+
+    .plant-card-title {
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .topbar-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .topbar-pill strong {
+      color: var(--text);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .role-switcher {
+      display: inline-flex;
+      background: var(--surface-soft);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .role-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: background-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .role-btn.active {
+      background: var(--surface);
+      color: var(--forest);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .user-meta-name {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .user-meta-role {
+      font-size: 11.5px;
+      color: var(--text-subtle);
+    }
+
+    .page-content {
+      padding: 24px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .page-kicker {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--emerald-text);
+      margin-bottom: 4px;
+    }
+
+    .page-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Cards & Grids */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-subtitle {
+      font-size: 12.5px;
+      color: var(--text-subtle);
+      margin-top: 2px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-main-aside {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .kpi-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .kpi-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--emerald-bg);
+      color: var(--emerald-text);
+    }
+
+    .kpi-icon.cold {
+      background: var(--cold-bg);
+      color: var(--cold-text);
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-unit {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .kpi-note {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-soft);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--emerald);
+      transition: width 0.25s ease;
+    }
+
+    .progress-fill.amber { background: var(--amber); }
+    .progress-fill.red { background: var(--red); }
+    .progress-fill.cold { background: var(--cold); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-export { background: var(--emerald-bg); color: var(--emerald-text); }
+    .badge-local { background: var(--cold-bg); color: var(--cold-text); }
+    .badge-industrial { background: var(--surface-soft); color: var(--text-muted); }
+    .badge-warn { background: var(--amber-bg); color: var(--amber-text); }
+    .badge-danger { background: var(--red-bg); color: var(--red-text); }
+
+    .badge-cereza { background: var(--cherry-bg); color: var(--cherry-text); }
+    .badge-uva { background: var(--grape-bg); color: var(--grape-text); }
+    .badge-manzana { background: var(--apple-bg); color: var(--apple-text); }
+    .badge-kiwi { background: var(--kiwi-bg); color: var(--kiwi-text); }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      padding: 10px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-subtle);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      font-size: 13.5px;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr.clickable {
+      cursor: pointer;
+    }
+
+    /* Chamber cards */
+    .chamber-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .chamber-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #f8fafc;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin: 12px 0;
+    }
+
+    .chamber-metric-label {
+      font-size: 11px;
+      color: var(--text-subtle);
+      font-weight: 600;
+    }
+
+    .chamber-metric-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--cold-text);
+    }
+
+    /* Selectable option cards (Species / Quality / Rack slots) */
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .option-card {
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: left;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .option-card:hover {
+      border-color: var(--border-strong);
+      background: #f8fafc;
+    }
+
+    .option-card.selected {
+      border-color: var(--emerald);
+      background: var(--emerald-bg);
+    }
+
+    .option-card-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .option-card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Rack / Spatial Grid */
+    .rack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 10px;
+    }
+
+    .slot-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: left;
+      min-height: 76px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+
+    .slot-box.occupied {
+      background: var(--forest);
+      color: #ffffff;
+      border-color: var(--forest);
+    }
+
+    .slot-box.dispatch-soon {
+      background: #fef3c7;
+      color: #78350f;
+      border-color: #f59e0b;
+    }
+
+    .slot-box.free {
+      background: #f0f9ff;
+      color: var(--cold-text);
+      border-color: #bae6fd;
+    }
+
+    .slot-box.selected-slot {
+      outline: 3px solid var(--emerald);
+      outline-offset: 1px;
+    }
+
+    .slot-code {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .slot-info {
+      font-size: 11px;
+      opacity: 0.92;
+      line-height: 1.3;
+    }
+
+    /* Filter Chips */
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-tab {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .filter-tab.active {
+      background: var(--forest);
+      color: #ffffff;
+      border-color: var(--forest);
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      border: 1px solid #a7f3d0;
+      background: var(--emerald-bg);
+      flex-wrap: wrap;
+    }
+
+    .alert-banner.warn {
+      border-color: #fde68a;
+      background: var(--amber-bg);
+    }
+
+    /* Simple Bar Charts */
+    .vchart-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+      height: 190px;
+      padding-top: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .vchart-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .vchart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 140px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .vbar {
+      width: 18px;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.25s ease;
+    }
+
+    .vbar.in { background: var(--emerald); }
+    .vbar.out { background: var(--forest); }
+    .vbar.species { width: 42px; background: var(--forest); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--forest-dark);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
+      font-size: 13.5px;
+      font-weight: 500;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    /* Print styling */
+    @media print {
+      .sidebar, .topbar, .no-print, .toast { display: none !important; }
+      .page-content { padding: 0; max-width: 100%; }
+      body { background: #ffffff; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-main-aside { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 820px) {
+      .sidebar {
+        position: fixed;
+        left: -270px;
+        transition: left 0.2s ease;
+      }
+      .sidebar.open {
+        left: 0;
+      }
+      .mobile-menu-btn {
+        display: inline-flex;
+      }
+      .grid-3, .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .topbar {
+        padding: 12px 16px;
+      }
+      .page-content {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. PANTALLA DE ACCESO (LOGIN) -->
+  <div id="view-login" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-icon-box" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="login-kicker">Módulo Operativo · Temporada 2024 / 2025</span>
+        <h1 class="login-title">SGI Packing</h1>
+        <p class="login-subtitle">Sistema de Gestión de Inventario Frutícola</p>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="login-user">Usuario o RUT Operativo</label>
+            <span class="form-hint">Terminal: CL-CUR-04</span>
+          </div>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input id="login-user" type="text" class="input input-with-icon" value="operador.bodega@fruticola.cl" placeholder="Usuario o correo" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="login-pass">Contraseña Operador</label>
+            <span class="form-hint">Acceso demostrativo</span>
+          </div>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input id="login-pass" type="password" class="input input-with-icon" value="••••••••••" placeholder="Contraseña" required />
+            <button type="button" id="toggle-pass-btn" class="input-action-btn" title="Mostrar u ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="login-plant">Terminal / Planta Asignada</label>
+          </div>
+          <select id="login-plant" class="select">
+            <option value="Planta Central Curicó – Bodega Principal">Planta Central Curicó – Bodega Principal</option>
+            <option value="Planta Sur Molina – Cámaras 1 a 4">Planta Sur Molina – Cámaras 1 a 4</option>
+            <option value="Centro Acopio San Fernando">Centro Acopio San Fernando</option>
+          </select>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="login-remember" />
+          <span>Mantener vista de sesión activa durante este turno</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          Iniciar Sesión en SGI Packing
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+
+      <div class="rfid-box">
+        <div>
+          <div class="font-semibold" style="font-size:13px;">Acceso rápido con Credencial RFID</div>
+          <div class="text-subtle" style="font-size:12px;">Ingreso directo sin guardar datos</div>
+        </div>
+        <button type="button" id="rfid-login-btn" class="btn btn-soft btn-sm">Probar lectura</button>
+      </div>
+    </div>
+    <p class="login-footer">Frutícola del Valle · Sesión temporal en memoria (sin almacenamiento de datos)</p>
+  </div>
+
+  <!-- 2. APLICACIÓN PRINCIPAL -->
+  <div id="app-shell" class="app-shell hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <div class="sidebar-brand-title">SGI Packing</div>
+          <div class="sidebar-brand-sub">Frutícola del Valle</div>
+        </div>
+      </div>
+
+      <div class="nav-section-title">Vista Supervisor Packing</div>
+      <nav class="nav-list" aria-label="Navegación Supervisor">
+        <button class="nav-btn" data-view="supervisor-dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Dashboard Supervisor</span>
+        </button>
+        <button class="nav-btn" data-view="consulta-stock">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Consulta Inventario</span>
+        </button>
+        <button class="nav-btn" data-view="estadisticas">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Estadísticas y Gráficos</span>
+        </button>
+      </nav>
+
+      <div class="nav-section-title">Vista Encargado de Bodega</div>
+      <nav class="nav-list" aria-label="Navegación Bodega">
+        <button class="nav-btn active" data-view="bodega-dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span>Dashboard Bodega</span>
+        </button>
+        <button class="nav-btn" data-view="ingreso">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Registro de Ingreso</span>
+          <span class="nav-tag">RFID</span>
+        </button>
+        <button class="nav-btn" data-view="salida">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Registro de Salida</span>
+        </button>
+        <button class="nav-btn" data-view="ubicaciones">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>Gestión Ubicaciones</span>
+        </button>
+        <button class="nav-btn" data-view="inventario">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Inventario General</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="plant-card">
+          <div class="plant-card-title" id="sidebar-plant-name">Planta Central Curicó</div>
+          <div>Operación temporal en memoria</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Abrir menú">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="topbar-pill">
+            <span>Turno Activo:</span>
+            <strong>Mañana 07:00 - 15:30</strong>
+          </div>
+          <div class="topbar-pill">
+            <span>Estado Frío:</span>
+            <strong class="tabular">Cámaras 1 a 4: 0.2°C</strong>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="role-switcher" role="group" aria-label="Cambiar perfil de vista">
+            <button type="button" class="role-btn active" data-role="bodega">Encargado Bodega</button>
+            <button type="button" class="role-btn" data-role="supervisor">Supervisor Packing</button>
+          </div>
+
+          <div class="user-chip">
+            <div class="avatar" id="header-avatar">CN</div>
+            <div>
+              <div class="user-meta-name" id="header-user-name">Carlos Navarrete</div>
+              <div class="user-meta-role" id="header-user-role">Encargado de Bodega</div>
+            </div>
+          </div>
+
+          <button type="button" id="logout-btn" class="btn btn-secondary btn-sm">Salir</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+
+        <!-- VISTA 1: DASHBOARD BODEGA -->
+        <section id="view-bodega-dashboard" class="view-section">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Operación Normal · Recepción Activa</div>
+              <h1 class="page-title">Buen turno, <span id="bodega-greeting-name">Carlos Navarrete</span></h1>
+              <p class="page-subtitle">Resumen operativo de recepción, almacenamiento en frío y movimientos del turno actual.</p>
+            </div>
+            <div class="flex gap-2 wrap">
+              <button type="button" class="btn btn-secondary" onclick="navigateTo('salida')">Registrar Salida</button>
+              <button type="button" class="btn btn-primary" onclick="navigateTo('ingreso')">+ Nuevo Ingreso</button>
+            </div>
+          </div>
+
+          <div class="grid-4 mb-4" id="bodega-kpis"></div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Monitoreo y Capacidad de Cámaras Frigoríficas</h2>
+                <p class="card-subtitle">Control de temperatura de pulpa, humedad relativa y cubicaje en sesión</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="navigateTo('ubicaciones')">Ver Mapa Espacial</button>
+            </div>
+            <div class="grid-4" id="bodega-chambers"></div>
+          </div>
+
+          <div class="grid-main-aside">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Últimos Movimientos de Inventario</h2>
+                  <p class="card-subtitle">Ingresos y salidas registrados durante la sesión</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="navigateTo('inventario')">Ver Inventario</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Tipo</th>
+                      <th>Cód. Lote</th>
+                      <th>Especie &amp; Variedad</th>
+                      <th>Cantidad</th>
+                      <th>Origen / Destino</th>
+                      <th>Ubicación</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bodega-movements-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="flex" style="flex-direction:column; gap:16px;">
+              <div class="card">
+                <h2 class="card-title">Escáner Rápido RFID</h2>
+                <p class="card-subtitle mb-4">Ingrese código de lote o tag para localizar en bodega.</p>
+                <div class="form-group">
+                  <input id="quick-rfid-input" type="text" class="input" placeholder="Ej: LOT-2024-CRZ-042" />
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" id="quick-rfid-search" class="btn btn-primary btn-sm" style="flex:1;">Localizar</button>
+                  <button type="button" id="quick-rfid-clear" class="btn btn-secondary btn-sm">Limpiar</button>
+                </div>
+                <div id="quick-rfid-result" class="mt-3"></div>
+              </div>
+
+              <div class="card" id="cold-alert-card">
+                <h2 class="card-title" style="color:var(--red-text);">Aviso de Control de Frío</h2>
+                <p class="mt-2 text-muted" style="font-size:13px;">
+                  <strong>Cámara 02 (Uvas Red Globe):</strong> Ligero aumento térmico detectado en sector B. Se recomienda verificar recirculación.
+                </p>
+                <div class="flex gap-2 mt-3">
+                  <button type="button" id="btn-check-sensors" class="btn btn-danger-soft btn-sm" style="flex:1;">Revisar Sensores</button>
+                  <button type="button" id="btn-snooze-alert" class="btn btn-secondary btn-sm">Posponer</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2 class="card-title mb-4">Accesos Frecuentes</h2>
+                <div class="flex" style="flex-direction:column; gap:8px;">
+                  <button type="button" class="btn btn-secondary btn-full" style="justify-content:space-between;" onclick="navigateTo('ubicaciones')">
+                    <span>Mapa de Racks y Cámaras</span>
+                    <span>→</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-full" style="justify-content:space-between;" onclick="navigateTo('salida')">
+                    <span>Despacho de Contenedores</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 2: REGISTRO DE INGRESO -->
+        <section id="view-ingreso" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Terminal de Pesaje y Frío · Andén N° 3</div>
+              <h1 class="page-title">Registro de Ingreso de Fruta</h1>
+              <p class="page-subtitle">Recepción de fruta fresca desde huertos hacia cámaras de frío.</p>
+            </div>
+          </div>
+
+          <form id="ingreso-form" class="flex" style="flex-direction:column; gap:16px;">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">01. Identificación y Trazabilidad de Entrada</h2>
+                  <p class="card-subtitle">Datos de origen primario y código de lote</p>
+                </div>
+                <button type="button" id="btn-sim-rfid" class="btn btn-soft btn-sm">Generar Lectura RFID</button>
+              </div>
+
+              <div class="grid-2 mb-4">
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-rfid">Código RFID del Tag</label></div>
+                  <input id="in-rfid" type="text" class="input tabular" value="#RFID-8839-CL" required />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-code">Código Único del Lote</label></div>
+                  <input id="in-code" type="text" class="input tabular font-semibold" value="LOT-2024-UVA-099" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-label-row"><span>Tipo de Fruta (Especie)</span></div>
+                <div class="option-grid" id="in-species-grid">
+                  <button type="button" class="option-card selected" data-species="Uva" data-variety="Uva Thompson Seedless">
+                    <div class="option-card-title">Uva de Mesa</div>
+                    <div class="option-card-sub">Thompson / Red Globe</div>
+                  </button>
+                  <button type="button" class="option-card" data-species="Cereza" data-variety="Cereza Lapins">
+                    <div class="option-card-title">Cereza</div>
+                    <div class="option-card-sub">Lapins / Bing / Santina</div>
+                  </button>
+                  <button type="button" class="option-card" data-species="Manzana" data-variety="Manzana Royal Gala">
+                    <div class="option-card-title">Manzana</div>
+                    <div class="option-card-sub">Royal Gala / Fuji</div>
+                  </button>
+                  <button type="button" class="option-card" data-species="Kiwi" data-variety="Kiwi Hayward">
+                    <div class="option-card-title">Kiwi</div>
+                    <div class="option-card-sub">Hayward Verde</div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-producer">Nombre del Productor / Predio</label></div>
+                  <select id="in-producer" class="select">
+                    <option value="Fundo El Trapiche">Agrícola San Pedro / Fundo El Trapiche</option>
+                    <option value="Los Olmos">Agrícola Los Olmos (Curicó)</option>
+                    <option value="Santa Isabel">Huerto Santa Isabel (Molina)</option>
+                    <option value="Fundo Los Robles">Fundo Los Robles (Valle Central)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-caliber">Calibre Técnico</label></div>
+                  <select id="in-caliber" class="select">
+                    <option value="Jumbo (28-30 mm)">Jumbo (28-30 mm)</option>
+                    <option value="Large (19-21 mm)">Large (19-21 mm)</option>
+                    <option value="XL (> 22 mm)">XL (&gt; 22 mm)</option>
+                    <option value="Calibre 33 (85-95 g)">Calibre 33 (85-95 g)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">02. Fechas, Cantidades y Control de Calidad</h2>
+                  <p class="card-subtitle">Pesaje neto estimado y clasificación comercial</p>
+                </div>
+                <span class="badge badge-export">Tolerancia Conforme</span>
+              </div>
+
+              <div class="grid-3 mb-4">
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-date">Fecha de Cosecha</label></div>
+                  <input id="in-date" type="date" class="input" required />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-qty">Cantidad Total</label></div>
+                  <input id="in-qty" type="number" min="1" max="500" class="input tabular font-semibold" value="36" required />
+                  <div class="text-subtle mt-2" style="font-size:12px;" id="in-weight-preview">Peso estimado: 14.400 kg</div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label-row"><label for="in-unit">Tipo de Unidad</label></div>
+                  <select id="in-unit" class="select">
+                    <option value="Bins">Bin Plástico (400 kg)</option>
+                    <option value="Pallets">Pallet Exportación (480 kg)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label-row"><span>Calidad y Destino Comercial</span></div>
+                <div class="option-grid" id="in-quality-grid">
+                  <button type="button" class="option-card selected" data-quality="Exportación">
+                    <div class="option-card-title">Exportación Premium</div>
+                    <div class="option-card-sub">Primera categoría, calibre parejo</div>
+                  </button>
+                  <button type="button" class="option-card" data-quality="Mercado Local">
+                    <div class="option-card-title">Mercado Local (Retail)</div>
+                    <div class="option-card-sub">Distribución nacional</div>
+                  </button>
+                  <button type="button" class="option-card" data-quality="Industrial">
+                    <div class="option-card-title">Industrial / Pulpa</div>
+                    <div class="option-card-sub">Segunda selección / procesado</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">03. Asignación Inicial de Ubicación en Frío</h2>
+                  <p class="card-subtitle">Direccionamiento a cámara y rack disponible</p>
+                </div>
+              </div>
+
+              <div class="grid-main-aside">
+                <div>
+                  <div class="form-group">
+                    <div class="form-label-row"><label for="in-chamber">Cámara Frigorífica</label></div>
+                    <select id="in-chamber" class="select">
+                      <option value="Cámara 01">Cámara 01 - Cerezas (-0.5°C)</option>
+                      <option value="Cámara 02" selected>Cámara 02 - Uvas (0.0°C)</option>
+                      <option value="Cámara 03">Cámara 03 - Manzanas (1.0°C)</option>
+                      <option value="Cámara 04">Cámara 04 - Kiwis (0.2°C)</option>
+                    </select>
+                  </div>
+                  <div class="grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <div class="form-label-row"><label for="in-aisle">Pasillo</label></div>
+                      <select id="in-aisle" class="select">
+                        <option value="Pasillo A">Pasillo A</option>
+                        <option value="Pasillo B" selected>Pasillo B</option>
+                        <option value="Pasillo C">Pasillo C</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <div class="form-label-row"><label for="in-row">Fila</label></div>
+                      <select id="in-row" class="select">
+                        <option value="Fila 01">Fila 01</option>
+                        <option value="Fila 02">Fila 02</option>
+                        <option value="Fila 03">Fila 03</option>
+                        <option value="Fila 04" selected>Fila 04</option>
+                        <option value="Fila 05">Fila 05</option>
+                        <option value="Fila 06">Fila 06</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px;">
+                  <div class="font-semibold mb-4" style="font-size:13px;">Posición sugerida en Rack</div>
+                  <div class="rack-grid" id="in-slot-grid" style="grid-template-columns:repeat(4,1fr);">
+                    <button type="button" class="slot-box occupied" disabled><span class="slot-code">B-01</span><span class="slot-info">Ocupado</span></button>
+                    <button type="button" class="slot-box occupied" disabled><span class="slot-code">B-02</span><span class="slot-info">Ocupado</span></button>
+                    <button type="button" class="slot-box occupied" disabled><span class="slot-code">B-03</span><span class="slot-info">Ocupado</span></button>
+                    <button type="button" class="slot-box free selected-slot" data-slot="B-04"><span class="slot-code">B-04</span><span class="slot-info">Asignar</span></button>
+                    <button type="button" class="slot-box free" data-slot="B-05"><span class="slot-code">B-05</span><span class="slot-info">Libre</span></button>
+                    <button type="button" class="slot-box free" data-slot="B-06"><span class="slot-code">B-06</span><span class="slot-info">Libre</span></button>
+                    <button type="button" class="slot-box occupied" disabled><span class="slot-code">B-07</span><span class="slot-info">Ocupado</span></button>
+                    <button type="button" class="slot-box free" data-slot="B-08"><span class="slot-code">B-08</span><span class="slot-info">Libre</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card flex items-center justify-between wrap gap-3">
+              <button type="button" id="in-reset-btn" class="btn btn-secondary">Limpiar Formulario</button>
+              <button type="submit" class="btn btn-primary">Registrar Ingreso de Fruta</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- VISTA 3: REGISTRO DE SALIDA -->
+        <section id="view-salida" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Módulo de Salidas Frutícolas</div>
+              <h1 class="page-title">Registro de Salida y Despacho</h1>
+              <p class="page-subtitle">Control de despacho de bins y pallets con actualización inmediata de inventario.</p>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="form-label-row"><label for="out-lot-select">Seleccionar Lote Activo para Despacho</label></div>
+            <select id="out-lot-select" class="select"></select>
+          </div>
+
+          <div class="card mb-4" id="out-lot-summary"></div>
+
+          <form id="salida-form">
+            <div class="grid-main-aside mb-4">
+              <div class="card">
+                <h2 class="card-title mb-4">Parámetros de Salida / Despacho</h2>
+
+                <div class="form-group">
+                  <div class="form-label-row">
+                    <label for="out-qty">Cantidad a Despachar</label>
+                    <span class="form-hint" id="out-max-hint">Máximo disponible: 0</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <input id="out-qty" type="number" min="1" class="input tabular font-semibold" value="10" required />
+                    <button type="button" id="out-half-btn" class="btn btn-soft btn-sm">50% Lote</button>
+                    <button type="button" id="out-all-btn" class="btn btn-secondary btn-sm">Total</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="form-label-row"><label for="out-dest">Destino del Despacho</label></div>
+                  <select id="out-dest" class="select">
+                    <option value="Puerto San Antonio">Puerto San Antonio (Contenedor Reefer)</option>
+                    <option value="Puerto Valparaíso">Puerto Valparaíso (Embarque Exportación)</option>
+                    <option value="Línea Packing #1">Línea de Packing #1 (Proceso Interno)</option>
+                    <option value="Mercado Mayorista">Mercado Mayorista / Retail</option>
+                  </select>
+                </div>
+
+                <div class="grid-2">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-label-row"><label for="out-guide">Guía / Contenedor</label></div>
+                    <input id="out-guide" type="text" class="input tabular" value="GD-99482 / CONT-MSKU-982" required />
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-label-row"><label for="out-carrier">Transportista / Patente</label></div>
+                    <input id="out-carrier" type="text" class="input" value="Transportes FrigoNorte" required />
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" id="out-impact-card"></div>
+            </div>
+
+            <div class="card flex items-center justify-between wrap gap-3">
+              <button type="button" class="btn btn-secondary" onclick="navigateTo('bodega-dashboard')">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Confirmar Despacho y Actualizar Inventario</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- VISTA 4: GESTIÓN DE UBICACIONES -->
+        <section id="view-ubicaciones" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Logística Frío · En Tiempo Real</div>
+              <h1 class="page-title">Gestión de Ubicaciones en Cámaras</h1>
+              <p class="page-subtitle">Control espacial de lotes por pasillo y reubicación rápida de bins/pallets.</p>
+            </div>
+            <div class="card" style="padding:12px 18px;">
+              <div class="text-subtle" style="font-size:11px; font-weight:700;">OCUPACIÓN TOTAL PLANTA</div>
+              <div class="font-bold tabular" style="font-size:22px; color:var(--forest);" id="loc-total-occupancy">74%</div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="filter-pills" id="loc-chamber-tabs">
+              <button type="button" class="filter-tab active" data-chamber="Cámara 01">Cámara 01 - Cerezas (-0.5°C)</button>
+              <button type="button" class="filter-tab" data-chamber="Cámara 02">Cámara 02 - Uvas (0.0°C)</button>
+              <button type="button" class="filter-tab" data-chamber="Cámara 03">Cámara 03 - Manzanas (1.0°C)</button>
+              <button type="button" class="filter-tab" data-chamber="Cámara 04">Cámara 04 - Kiwis (0.2°C)</button>
+            </div>
+          </div>
+
+          <div class="grid-main-aside mb-4">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title" id="loc-map-title">Mapa Espacial: Cámara 01</h2>
+                  <p class="card-subtitle">Haga clic en un lote asignado para seleccionarlo y reubicarlo</p>
+                </div>
+                <div class="flex gap-2 wrap" style="font-size:12px;">
+                  <span class="badge badge-export">Asignado</span>
+                  <span class="badge badge-local">Disponible</span>
+                </div>
+              </div>
+              <div id="loc-spatial-map" class="flex" style="flex-direction:column; gap:16px;"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="card-title mb-4">Modificar Ubicación de Lote</h2>
+              <form id="relocate-form">
+                <div class="form-group">
+                  <div class="form-label-row"><label for="rel-lot">Lote Seleccionado</label></div>
+                  <select id="rel-lot" class="select"></select>
+                </div>
+                <div class="form-group">
+                  <div class="form-label-row"><label for="rel-chamber">1. Nueva Cámara</label></div>
+                  <select id="rel-chamber" class="select">
+                    <option value="Cámara 01">Cámara 01 - Cerezas</option>
+                    <option value="Cámara 02">Cámara 02 - Uvas</option>
+                    <option value="Cámara 03">Cámara 03 - Manzanas</option>
+                    <option value="Cámara 04">Cámara 04 - Kiwis</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <div class="form-label-row"><label for="rel-aisle">2. Nuevo Pasillo</label></div>
+                  <select id="rel-aisle" class="select">
+                    <option value="Pasillo A">Pasillo A · Rampa Despacho</option>
+                    <option value="Pasillo B">Pasillo B · Almacén Central</option>
+                    <option value="Pasillo C">Pasillo C · Tránsito Pesado</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <div class="form-label-row"><label for="rel-row">3. Nueva Fila</label></div>
+                  <select id="rel-row" class="select">
+                    <option value="Fila 01">Fila 01</option>
+                    <option value="Fila 02">Fila 02</option>
+                    <option value="Fila 03">Fila 03</option>
+                    <option value="Fila 04">Fila 04</option>
+                    <option value="Fila 05">Fila 05</option>
+                    <option value="Fila 06">Fila 06</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Confirmar Reubicación</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title mb-4">Lotes Almacenados en Cámara Activa</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Código Lote</th>
+                    <th>Fruta / Variedad</th>
+                    <th>Cantidad</th>
+                    <th>Cámara</th>
+                    <th>Pasillo</th>
+                    <th>Fila</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="loc-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 5: INVENTARIO GENERAL -->
+        <section id="view-inventario" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Módulo de Control Central</div>
+              <h1 class="page-title">Inventario General de Fruta</h1>
+              <p class="page-subtitle">Consolidado maestro de lotes y existencias en cámaras frigoríficas.</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="navigateTo('ingreso')">+ Nuevo Ingreso</button>
+          </div>
+
+          <div class="grid-3 mb-4" id="inv-summary-cards"></div>
+
+          <div class="card mb-4">
+            <div class="flex items-center justify-between wrap gap-3 mb-4">
+              <div style="flex:1; min-width:240px;">
+                <input id="inv-search" type="text" class="input" placeholder="Buscar por código de lote, tag RFID o productor..." />
+              </div>
+              <div class="filter-pills" id="inv-species-pills">
+                <button type="button" class="filter-tab active" data-species="Todas">Todas</button>
+                <button type="button" class="filter-tab" data-species="Uva">Uva</button>
+                <button type="button" class="filter-tab" data-species="Cereza">Cereza</button>
+                <button type="button" class="filter-tab" data-species="Manzana">Manzana</button>
+                <button type="button" class="filter-tab" data-species="Kiwi">Kiwi</button>
+              </div>
+            </div>
+
+            <div class="grid-3">
+              <div>
+                <div class="form-label-row"><label for="inv-filter-quality">Calidad Comercial</label></div>
+                <select id="inv-filter-quality" class="select">
+                  <option value="Todas">Todas las Calidades</option>
+                  <option value="Exportación">Exportación</option>
+                  <option value="Mercado Local">Mercado Local</option>
+                  <option value="Industrial">Industrial</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label-row"><label for="inv-filter-chamber">Cámara Frigorífica</label></div>
+                <select id="inv-filter-chamber" class="select">
+                  <option value="Todas">Todas las Cámaras</option>
+                  <option value="Cámara 01">Cámara 01</option>
+                  <option value="Cámara 02">Cámara 02</option>
+                  <option value="Cámara 03">Cámara 03</option>
+                  <option value="Cámara 04">Cámara 04</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label-row"><label for="inv-filter-status">Estado Operativo</label></div>
+                <select id="inv-filter-status" class="select">
+                  <option value="Todos">Todos los Estados</option>
+                  <option value="Almacenado Óptimo">Almacenado Óptimo</option>
+                  <option value="Listo para Despacho">Listo para Despacho</option>
+                  <option value="En Línea Packing">En Línea Packing</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Código Lote &amp; RFID</th>
+                    <th>Variedad / Fruta</th>
+                    <th class="text-right">Existencia</th>
+                    <th>Calidad</th>
+                    <th>Cámara</th>
+                    <th>Ubicación</th>
+                    <th>Estado</th>
+                    <th class="text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="inv-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 6: DASHBOARD SUPERVISOR -->
+        <section id="view-supervisor-dashboard" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Módulo de Supervisión Técnica</div>
+              <h1 class="page-title">Panel de Control y Planificación de Packing</h1>
+              <p class="page-subtitle">Supervisora: Ing. Marcela Soto · Planificación diaria de líneas de empaque.</p>
+            </div>
+            <div class="flex gap-2 wrap">
+              <button type="button" class="btn btn-secondary" onclick="window.print()">Imprimir Balance</button>
+              <button type="button" class="btn btn-primary" onclick="navigateTo('consulta-stock')">Planificar Línea</button>
+            </div>
+          </div>
+
+          <div class="grid-4 mb-4" id="sup-kpis"></div>
+
+          <div class="alert-banner mb-4" id="fifo-banner">
+            <div>
+              <div class="font-bold" style="color:var(--emerald-text); font-size:13px;">RECOMENDACIÓN ALGORITMO FIFO · PRIORIDAD ALTA</div>
+              <div class="mt-2" id="fifo-banner-text">Lote LOT-2024-CRZ-042 cumple 4 días en reposo térmico óptimo.</div>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" id="fifo-snooze-btn" class="btn btn-secondary btn-sm">Posponer</button>
+              <button type="button" id="fifo-assign-btn" class="btn btn-primary btn-sm">Asignar a Línea 2</button>
+            </div>
+          </div>
+
+          <div class="grid-2 mb-4">
+            <div class="card">
+              <h2 class="card-title">Distribución de Inventario por Especie</h2>
+              <p class="card-subtitle mb-4">Kilogramos disponibles en patio y cámaras</p>
+              <div id="sup-species-bars" class="flex" style="flex-direction:column; gap:14px;"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="card-title">Calidad Comercial de Stock</h2>
+              <p class="card-subtitle mb-4">Clasificación según precalibre y sanidad</p>
+              <div id="sup-quality-donut" class="flex items-center justify-between wrap gap-4"></div>
+            </div>
+          </div>
+
+          <div class="grid-main-aside">
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Últimos Movimientos de Bodega y Frío</h2>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="navigateTo('inventario')">Ver Kardex</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Tipo</th>
+                      <th>Origen / Destino</th>
+                      <th>Especie &amp; Lote</th>
+                      <th class="text-right">Cantidad</th>
+                      <th>Ubicación</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sup-movements-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="flex" style="flex-direction:column; gap:16px;">
+              <div class="card">
+                <h2 class="card-title mb-4">Estado de Líneas Packing</h2>
+                <div class="flex" style="flex-direction:column; gap:12px;">
+                  <div>
+                    <div class="flex justify-between mb-4" style="margin-bottom:4px;">
+                      <strong style="font-size:13px;">Línea 1 - Calibrador</strong>
+                      <span class="badge badge-export">Activa · 4.200 kg/hr</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill" style="width:82%"></div></div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between" style="margin-bottom:4px;">
+                      <strong style="font-size:13px;">Línea 2 - Empaque Cerezas</strong>
+                      <span class="badge badge-local" id="line2-status-badge">Lista para Lote</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill cold" id="line2-progress" style="width:25%"></div></div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between" style="margin-bottom:4px;">
+                      <strong style="font-size:13px;">Línea 3 - Uva de Mesa</strong>
+                      <span class="badge badge-export">Activa · 3.800 kg/hr</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill" style="width:74%"></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2 class="card-title">Inspección Fitosanitaria</h2>
+                <p class="card-subtitle mb-4">Muestreo de calidad de lotes del turno</p>
+                <div class="flex items-center justify-between">
+                  <div class="font-bold tabular" style="font-size:24px;">18 / 20 Pallets</div>
+                  <span class="badge badge-export">90% Aprobado</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 7: CONSULTA DE INVENTARIO & STOCK (SUPERVISOR) -->
+        <section id="view-consulta-stock" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Módulo de Control de Existencias</div>
+              <h1 class="page-title">Consulta de Stock e Inventario Disponible</h1>
+              <p class="page-subtitle">Filtros técnicos por especie, calibre, calidad y código de lote.</p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" id="btn-export-csv" class="btn btn-secondary">Exportar CSV</button>
+              <button type="button" class="btn btn-secondary" onclick="window.print()">Imprimir Rótulos</button>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <h2 class="card-title mb-4">Filtros Técnicos de Búsqueda</h2>
+            <div class="grid-4 mb-4">
+              <div>
+                <div class="form-label-row"><label for="con-species">Tipo de Fruta</label></div>
+                <select id="con-species" class="select">
+                  <option value="Todas">Todas las Especies</option>
+                  <option value="Cereza">Cereza</option>
+                  <option value="Uva">Uva</option>
+                  <option value="Manzana">Manzana</option>
+                  <option value="Kiwi">Kiwi</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label-row"><label for="con-quality">Calidad Comercial</label></div>
+                <select id="con-quality" class="select">
+                  <option value="Todas">Todas las Calidades</option>
+                  <option value="Exportación">Exportación</option>
+                  <option value="Mercado Local">Mercado Local</option>
+                  <option value="Industrial">Industrial</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label-row"><label for="con-chamber">Cámara</label></div>
+                <select id="con-chamber" class="select">
+                  <option value="Todas">Todas las Cámaras</option>
+                  <option value="Cámara 01">Cámara 01</option>
+                  <option value="Cámara 02">Cámara 02</option>
+                  <option value="Cámara 03">Cámara 03</option>
+                  <option value="Cámara 04">Cámara 04</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label-row"><label for="con-search">Código de Lote</label></div>
+                <input id="con-search" type="text" class="input" placeholder="Ej: LOT-2024-CRZ" />
+              </div>
+            </div>
+            <div class="flex justify-between items-center wrap gap-2">
+              <span class="text-muted" style="font-size:13px;" id="con-count-label">Mostrando lotes disponibles</span>
+              <button type="button" id="con-clear-btn" class="btn btn-secondary btn-sm">Limpiar Filtros</button>
+            </div>
+          </div>
+
+          <div class="grid-4 mb-4" id="con-summary-cards"></div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Lotes Disponibles para Programación</h2>
+              <span class="text-subtle" style="font-size:12px;">Haga clic en un lote para ver su ficha técnica</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Código de Lote</th>
+                    <th>Fruta &amp; Variedad</th>
+                    <th>Calibre Técnico</th>
+                    <th>Calidad Comercial</th>
+                    <th>Cosecha &amp; Frío</th>
+                    <th class="text-right">Cantidad / Peso</th>
+                    <th class="text-right">Ficha</th>
+                  </tr>
+                </thead>
+                <tbody id="con-table-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 8: DETALLE TÉCNICO DE LOTE -->
+        <section id="view-detalle-lote" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <button type="button" id="detail-back-btn" class="btn btn-secondary btn-sm mb-4">← Regresar</button>
+              <div class="page-kicker">Ficha Técnica de Lote</div>
+              <h1 class="page-title tabular" id="detail-title">LOT-2024-CRZ-042</h1>
+              <p class="page-subtitle" id="detail-subtitle"></p>
+            </div>
+            <div id="detail-status-box"></div>
+          </div>
+
+          <div class="grid-main-aside mb-4">
+            <div class="card" id="detail-agronomic-card"></div>
+            <div class="flex" style="flex-direction:column; gap:16px;">
+              <div class="card" id="detail-balance-card"></div>
+              <div class="card" id="detail-cold-card"></div>
+            </div>
+          </div>
+
+          <div class="card flex items-center justify-between wrap gap-3 no-print">
+            <div>
+              <div class="font-bold">Panel de Acciones del Supervisor</div>
+              <div class="text-subtle" style="font-size:12.5px;">Autorización directa hacia despacho o línea de empaque</div>
+            </div>
+            <div class="flex gap-2 wrap">
+              <button type="button" class="btn btn-secondary" onclick="window.print()">Imprimir Ficha</button>
+              <button type="button" id="detail-dispatch-btn" class="btn btn-secondary">Ir a Despacho</button>
+              <button type="button" id="detail-assign-btn" class="btn btn-primary">Asignar a Línea de Packing</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 9: ESTADÍSTICAS Y GRÁFICOS -->
+        <section id="view-estadisticas" class="view-section hidden">
+          <div class="page-header">
+            <div>
+              <div class="page-kicker">Módulo de Supervisión Agroindustrial</div>
+              <h1 class="page-title">Estadísticas y Análisis de Inventario</h1>
+              <p class="page-subtitle">Métricas consolidadas de volumen almacenado, calidad y ocupación.</p>
+            </div>
+            <div class="flex gap-2 wrap items-center">
+              <select id="stats-filter-species" class="select" style="width:auto;">
+                <option value="Todas">Todas las Especies</option>
+                <option value="Uva">Solo Uva</option>
+                <option value="Cereza">Solo Cereza</option>
+                <option value="Manzana">Solo Manzana</option>
+                <option value="Kiwi">Solo Kiwi</option>
+              </select>
+              <button type="button" class="btn btn-primary" onclick="window.print()">Imprimir Informe</button>
+            </div>
+          </div>
+
+          <div class="grid-2 mb-4">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Volumen Almacenado por Especie</h2>
+                  <p class="card-subtitle">Kilogramos netos actuales en sesión</p>
+                </div>
+              </div>
+              <div id="stats-species-chart"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Calidad Comercial</h2>
+                  <p class="card-subtitle">Segmentación para exportación y mercado interno</p>
+                </div>
+                <span class="badge badge-export">Certificado</span>
+              </div>
+              <div id="stats-quality-donut" class="flex items-center justify-between wrap gap-4"></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Ocupación de Cámaras de Frío</h2>
+                  <p class="card-subtitle">Capacidad utilizada por cámara</p>
+                </div>
+              </div>
+              <div id="stats-chambers-list" class="flex" style="flex-direction:column; gap:14px;"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Ingresos vs Salidas Semanales</h2>
+                  <p class="card-subtitle">Comparativa diaria de flujo operativo (en miles de kg)</p>
+                </div>
+                <div class="flex gap-3" style="font-size:12px;">
+                  <span><span class="dot" style="color:var(--emerald)"></span> Ingreso</span>
+                  <span><span class="dot" style="color:var(--forest)"></span> Salida</span>
+                </div>
+              </div>
+              <div class="vchart-wrap" id="stats-weekly-bars"></div>
+              <div class="grid-3 mt-4" id="stats-weekly-totals"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    // =========================================================================
+    // ESTADO EN MEMORIA (NO GUARDA DATOS EN DISCO / SIN LOCALSTORAGE / SIN JSON)
+    // =========================================================================
+    const UNIT_WEIGHT = { Bins: 400, Pallets: 480 };
+
+    const INITIAL_CHAMBERS = [
+      { id: "Cámara 01", name: "Cámara 01", focus: "Cerezas", temp: "-0.5°C", humidity: "92% HR", capacity: 160 },
+      { id: "Cámara 02", name: "Cámara 02", focus: "Uvas", temp: "0.0°C", humidity: "90% HR", capacity: 200 },
+      { id: "Cámara 03", name: "Cámara 03", focus: "Manzanas", temp: "1.0°C", humidity: "94% HR", capacity: 180 },
+      { id: "Cámara 04", name: "Cámara 04", focus: "Kiwis", temp: "0.2°C", humidity: "91% HR", capacity: 140 }
+    ];
+
+    const INITIAL_LOTS = [
+      {
+        code: "LOT-2024-CRZ-042",
+        rfid: "#RFID-9842-X1",
+        species: "Cereza",
+        variety: "Cereza Lapins",
+        producer: "Fundo Los Robles",
+        caliber: "Jumbo (28-30 mm)",
+        brix: "21.5° Bx",
+        initialQty: 64,
+        qty: 32,
+        unit: "Pallets",
+        quality: "Exportación",
+        harvestDate: "2024-10-18",
+        daysInCold: 4,
+        chamber: "Cámara 01",
+        aisle: "Pasillo A",
+        row: "Fila 03",
+        status: "Almacenado Óptimo"
+      },
+      {
+        code: "LOT-2024-UVA-088",
+        rfid: "#RFID-4412-B8",
+        species: "Uva",
+        variety: "Uva Thompson Seedless",
+        producer: "Fundo El Trapiche",
+        caliber: "Large (19-21 mm)",
+        brix: "18.2° Bx",
+        initialQty: 48,
+        qty: 48,
+        unit: "Bins",
+        quality: "Mercado Local",
+        harvestDate: "2024-10-20",
+        daysInCold: 2,
+        chamber: "Cámara 02",
+        aisle: "Pasillo B",
+        row: "Fila 04",
+        status: "Listo para Despacho"
+      },
+      {
+        code: "LOT-2024-MNZ-089",
+        rfid: "#RFID-7719-M4",
+        species: "Manzana",
+        variety: "Manzana Royal Gala",
+        producer: "Santa Isabel",
+        caliber: "Large (75-80 mm)",
+        brix: "14.8° Bx",
+        initialQty: 60,
+        qty: 60,
+        unit: "Bins",
+        quality: "Exportación",
+        harvestDate: "2024-10-17",
+        daysInCold: 5,
+        chamber: "Cámara 03",
+        aisle: "Pasillo B",
+        row: "Fila 04",
+        status: "Almacenado Óptimo"
+      },
+      {
+        code: "LOT-2024-KIW-015",
+        rfid: "#RFID-1205-K9",
+        species: "Kiwi",
+        variety: "Kiwi Hayward",
+        producer: "Los Olmos",
+        caliber: "Calibre 33 (85-95 g)",
+        brix: "13.6° Bx",
+        initialQty: 24,
+        qty: 24,
+        unit: "Pallets",
+        quality: "Industrial",
+        harvestDate: "2024-10-21",
+        daysInCold: 1,
+        chamber: "Cámara 04",
+        aisle: "Pasillo A",
+        row: "Fila 02",
+        status: "Almacenado Óptimo"
+      },
+      {
+        code: "LOT-2024-UVA-119",
+        rfid: "#RFID-5100-TH",
+        species: "Uva",
+        variety: "Uva Red Globe",
+        producer: "Fundo El Trapiche",
+        caliber: "XL (> 22 mm)",
+        brix: "17.5° Bx",
+        initialQty: 52,
+        qty: 52,
+        unit: "Bins",
+        quality: "Exportación",
+        harvestDate: "2024-10-19",
+        daysInCold: 3,
+        chamber: "Cámara 02",
+        aisle: "Pasillo C",
+        row: "Fila 02",
+        status: "Almacenado Óptimo"
+      },
+      {
+        code: "LOT-2024-CRZ-043",
+        rfid: "#RFID-9901-L2",
+        species: "Cereza",
+        variety: "Cereza Bing",
+        producer: "Fundo Los Robles",
+        caliber: "Extra Jumbo (> 30 mm)",
+        brix: "22.0° Bx",
+        initialQty: 36,
+        qty: 36,
+        unit: "Pallets",
+        quality: "Exportación",
+        harvestDate: "2024-10-19",
+        daysInCold: 3,
+        chamber: "Cámara 01",
+        aisle: "Pasillo A",
+        row: "Fila 04",
+        status: "Listo para Despacho"
+      }
+    ];
+
+    const INITIAL_MOVEMENTS = [
+      { time: "11:42", type: "Ingreso", code: "LOT-2024-CRZ-042", variety: "Cereza Lapins", qty: "32 Pallets", originDest: "Fundo Los Robles", location: "Cámara 01 · Fila 03" },
+      { time: "11:15", type: "Salida", code: "LOT-2024-UVA-019", variety: "Uva Thompson", qty: "24 Pallets", originDest: "Puerto San Antonio", location: "Andén 02" },
+      { time: "10:50", type: "Ingreso", code: "LOT-2024-MNZ-089", variety: "Manzana Royal Gala", qty: "60 Bins", originDest: "Santa Isabel", location: "Cámara 03 · Fila 04" },
+      { time: "10:10", type: "Salida", code: "LOT-2024-CRZ-039", variety: "Cereza Bing", qty: "18 Pallets", originDest: "Puerto Valparaíso", location: "Andén 01" },
+      { time: "09:35", type: "Ingreso", code: "LOT-2024-KIW-015", variety: "Kiwi Hayward", qty: "24 Pallets", originDest: "Los Olmos", location: "Cámara 04 · Fila 02" }
+    ];
+
+    const WEEKLY_FLOW = [
+      { day: "Lun", inKg: 120, outKg: 85 },
+      { day: "Mar", inKg: 155, outKg: 110 },
+      { day: "Mié", inKg: 140, outKg: 130 },
+      { day: "Jue", inKg: 165, outKg: 105 },
+      { day: "Vie", inKg: 135, outKg: 145 },
+      { day: "Sáb", inKg: 95, outKg: 112 },
+      { day: "Dom", inKg: 45, outKg: 35 }
+    ];
+
+    const state = {
+      loggedIn: false,
+      role: "bodega",
+      activeView: "bodega-dashboard",
+      previousView: "consulta-stock",
+      plant: "Planta Central Curicó – Bodega Principal",
+      chambers: INITIAL_CHAMBERS,
+      lots: INITIAL_LOTS.map(l => ({ ...l })),
+      movements: INITIAL_MOVEMENTS.map(m => ({ ...m })),
+      selectedLotCode: INITIAL_LOTS[0].code,
+      selectedLocChamber: "Cámara 01",
+      inFormSpecies: "Uva",
+      inFormVariety: "Uva Thompson Seedless",
+      inFormQuality: "Exportación",
+      inFormSlot: "B-04",
+      invSpeciesFilter: "Todas",
+      line2Assigned: false
+    };
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+    function formatNum(n) {
+      return Math.round(n).toLocaleString("es-CL");
+    }
+
+    function lotWeightKg(lot) {
+      return lot.qty * (UNIT_WEIGHT[lot.unit] || 400);
+    }
+
+    function speciesBadgeClass(species) {
+      if (species === "Cereza") return "badge-cereza";
+      if (species === "Uva") return "badge-uva";
+      if (species === "Manzana") return "badge-manzana";
+      return "badge-kiwi";
+    }
+
+    function qualityBadgeClass(quality) {
+      if (quality === "Exportación") return "badge-export";
+      if (quality === "Mercado Local") return "badge-local";
+      return "badge-industrial";
+    }
+
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 3200);
+    }
+
+    function currentTimeStr() {
+      const now = new Date();
+      return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+    }
+
+    // =========================================================================
+    // NAVEGACIÓN Y ROLES
+    // =========================================================================
+    function navigateTo(viewId) {
+      if (viewId !== "detalle-lote") {
+        state.previousView = state.activeView;
+      }
+      state.activeView = viewId;
+
+      document.querySelectorAll(".view-section").forEach(sec => sec.classList.add("hidden"));
+      const target = document.getElementById("view-" + viewId);
+      if (target) target.classList.remove("hidden");
+
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === viewId);
+      });
+
+      // Cerrar menú móvil si está abierto
+      document.getElementById("sidebar").classList.remove("open");
+
+      renderActiveView();
+    }
+
+    function setRole(role) {
+      state.role = role;
+      document.querySelectorAll(".role-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.role === role);
+      });
+
+      const avatar = document.getElementById("header-avatar");
+      const nameEl = document.getElementById("header-user-name");
+      const roleEl = document.getElementById("header-user-role");
+
+      if (role === "supervisor") {
+        avatar.textContent = "MS";
+        nameEl.textContent = "Ing. Marcela Soto";
+        roleEl.textContent = "Supervisora Packing";
+        navigateTo("supervisor-dashboard");
+      } else {
+        avatar.textContent = "CN";
+        nameEl.textContent = "Carlos Navarrete";
+        roleEl.textContent = "Encargado de Bodega";
+        navigateTo("bodega-dashboard");
+      }
+    }
+
+    function openLotDetail(code) {
+      state.selectedLotCode = code;
+      navigateTo("detalle-lote");
+    }
+
+    function openDispatchForLot(code) {
+      navigateTo("salida");
+      const select = document.getElementById("out-lot-select");
+      if (select) {
+        select.value = code;
+        renderSalidaView();
+      }
+    }
+
+    // =========================================================================
+    // RENDERIZADORES POR VISTA
+    // =========================================================================
+    function renderActiveView() {
+      switch (state.activeView) {
+        case "bodega-dashboard": renderBodegaDashboard(); break;
+        case "ingreso": renderIngresoPreview(); break;
+        case "salida": renderSalidaView(); break;
+        case "ubicaciones": renderUbicacionesView(); break;
+        case "inventario": renderInventarioView(); break;
+        case "supervisor-dashboard": renderSupervisorDashboard(); break;
+        case "consulta-stock": renderConsultaView(); break;
+        case "detalle-lote": renderDetailView(); break;
+        case "estadisticas": renderEstadisticasView(); break;
+      }
+    }
+
+    function getChamberOccupancy(chamberId) {
+      const lotsIn = state.lots.filter(l => l.chamber === chamberId && l.qty > 0);
+      const units = lotsIn.reduce((sum, l) => sum + l.qty, 0);
+      const ch = state.chambers.find(c => c.id === chamberId);
+      const pct = ch ? Math.min(100, Math.round((units / ch.capacity) * 100)) : 0;
+      return { units, pct, lotsCount: lotsIn.length };
+    }
+
+    function renderBodegaDashboard() {
+      const activeLots = state.lots.filter(l => l.qty > 0);
+      const totalUnits = activeLots.reduce((s, l) => s + l.qty, 0);
+      const totalBins = activeLots.filter(l => l.unit === "Bins").reduce((s, l) => s + l.qty, 0);
+      const totalPallets = activeLots.filter(l => l.unit === "Pallets").reduce((s, l) => s + l.qty, 0);
+      const ingresosHoy = state.movements.filter(m => m.type === "Ingreso").length;
+      const salidasHoy = state.movements.filter(m => m.type === "Salida").length;
+
+      document.getElementById("bodega-kpis").innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Total Lotes Activos</span>
+            <span class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </span>
+          </div>
+          <div class="kpi-value tabular">${activeLots.length}<span class="kpi-unit">Lotes</span></div>
+          <div class="kpi-note">4 especies frutícolas en frío</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Bins &amp; Pallets en Stock</span>
+            <span class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+            </span>
+          </div>
+          <div class="kpi-value tabular">${formatNum(totalUnits)}<span class="kpi-unit">Uds.</span></div>
+          <div class="kpi-note tabular">${formatNum(totalBins)} Bins · ${formatNum(totalPallets)} Pallets</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Recepciones del Turno</span>
+            <span class="kpi-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </span>
+          </div>
+          <div class="kpi-value tabular">${ingresosHoy}<span class="kpi-unit">Ingresos</span></div>
+          <div class="kpi-note">Control fitosanitario al 100%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Despachos Registrados</span>
+            <span class="kpi-icon cold">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </span>
+          </div>
+          <div class="kpi-value tabular">${salidasHoy}<span class="kpi-unit">Salidas</span></div>
+          <div class="kpi-note">Rumbo a puerto y packing</div>
+        </div>
+      `;
+
+      document.getElementById("bodega-chambers").innerHTML = state.chambers.map(ch => {
+        const occ = getChamberOccupancy(ch.id);
+        const barClass = occ.pct >= 85 ? "amber" : "";
+        return `
+          <div class="chamber-card">
+            <div class="flex items-center justify-between">
+              <strong style="font-size:15px;">${ch.name}</strong>
+              <span class="badge ${occ.pct >= 85 ? "badge-warn" : "badge-export"} tabular">${occ.pct}%</span>
+            </div>
+            <div class="text-subtle" style="font-size:12.5px; margin-top:2px;">${ch.focus}</div>
+            <div class="chamber-metrics">
+              <div>
+                <div class="chamber-metric-label">TEMP. FRÍO</div>
+                <div class="chamber-metric-val tabular">${ch.temp}</div>
+              </div>
+              <div>
+                <div class="chamber-metric-label">HUMEDAD</div>
+                <div class="chamber-metric-val tabular">${ch.humidity}</div>
+              </div>
+            </div>
+            <div class="progress-track mb-4" style="margin-bottom:6px;">
+              <div class="progress-fill ${barClass}" style="width:${occ.pct}%"></div>
+            </div>
+            <div class="flex justify-between text-subtle tabular" style="font-size:12px;">
+              <span>${occ.units} / ${ch.capacity} Uds.</span>
+              <span>${occ.lotsCount} Lotes</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("bodega-movements-tbody").innerHTML = state.movements.slice(0, 6).map(m => `
+        <tr>
+          <td class="tabular text-subtle">${m.time}</td>
+          <td><span class="badge ${m.type === "Ingreso" ? "badge-export" : "badge-local"}">${m.type === "Ingreso" ? "↓ Ingreso" : "↑ Salida"}</span></td>
+          <td class="tabular font-semibold">${m.code}</td>
+          <td>${m.variety}</td>
+          <td class="tabular font-semibold">${m.qty}</td>
+          <td>${m.originDest}</td>
+          <td class="text-subtle">${m.location}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderIngresoPreview() {
+      const qty = Number(document.getElementById("in-qty").value) || 0;
+      const unit = document.getElementById("in-unit").value;
+      const weight = qty * (UNIT_WEIGHT[unit] || 400);
+      document.getElementById("in-weight-preview").textContent = "Peso estimado: " + formatNum(weight) + " kg";
+    }
+
+    function renderSalidaView() {
+      const activeLots = state.lots.filter(l => l.qty > 0);
+      const select = document.getElementById("out-lot-select");
+      const prevVal = select.value;
+
+      select.innerHTML = activeLots.length
+        ? activeLots.map(l => `<option value="${l.code}">${l.code} — ${l.variety} (${l.qty} ${l.unit} en ${l.chamber})</option>`).join("")
+        : `<option value="">Sin lotes con stock disponible</option>`;
+
+      if (prevVal && activeLots.some(l => l.code === prevVal)) {
+        select.value = prevVal;
+      }
+
+      const lot = activeLots.find(l => l.code === select.value) || activeLots[0];
+      const summaryEl = document.getElementById("out-lot-summary");
+      const impactEl = document.getElementById("out-impact-card");
+
+      if (!lot) {
+        summaryEl.innerHTML = `<p class="text-muted">No hay stock activo disponible para despachar en este momento.</p>`;
+        impactEl.innerHTML = "";
+        return;
+      }
+
+      const qtyInput = document.getElementById("out-qty");
+      qtyInput.max = lot.qty;
+      if (Number(qtyInput.value) > lot.qty) qtyInput.value = lot.qty;
+      if (Number(qtyInput.value) < 1) qtyInput.value = 1;
+      const dispatchQty = Number(qtyInput.value) || 0;
+      const remaining = Math.max(0, lot.qty - dispatchQty);
+      const remainPct = Math.round((remaining / lot.qty) * 100);
+
+      document.getElementById("out-max-hint").textContent = `Máximo disponible: ${lot.qty} ${lot.unit}`;
+
+      summaryEl.innerHTML = `
+        <div class="flex items-center justify-between wrap gap-3 mb-4">
+          <div>
+            <div class="flex items-center gap-2 wrap">
+              <strong class="tabular" style="font-size:20px;">${lot.code}</strong>
+              <span class="badge ${speciesBadgeClass(lot.species)}">${lot.variety}</span>
+              <span class="badge ${qualityBadgeClass(lot.quality)}">${lot.quality}</span>
+            </div>
+            <div class="text-subtle mt-2" style="font-size:13px;">Calibre: ${lot.caliber} · Tag: ${lot.rfid}</div>
+          </div>
+          <span class="badge badge-local">${lot.chamber} · ${lot.aisle} · ${lot.row}</span>
+        </div>
+        <div class="grid-3">
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">PRODUCTOR ORIGEN</div>
+            <div class="font-bold mt-2">${lot.producer}</div>
+          </div>
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">STOCK ACTUAL EN BODEGA</div>
+            <div class="font-bold tabular mt-2" style="font-size:18px; color:var(--emerald-text);">${lot.qty} ${lot.unit}</div>
+          </div>
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">TIEMPO EN CÁMARA FRÍA</div>
+            <div class="font-bold tabular mt-2">${lot.daysInCold} días de reposo</div>
+          </div>
+        </div>
+      `;
+
+      impactEl.innerHTML = `
+        <h2 class="card-title mb-4">Impacto en Inventario en Tiempo Real</h2>
+        <div class="grid-3 mb-4" style="text-align:center;">
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">STOCK ACTUAL</div>
+            <div class="font-bold tabular mt-2" style="font-size:22px;">${lot.qty}</div>
+            <div class="text-subtle" style="font-size:12px;">${lot.unit}</div>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <div class="font-bold tabular" style="color:var(--red);">-${dispatchQty} ${lot.unit}</div>
+            <div class="text-subtle" style="font-size:11px;">DESPACHO</div>
+          </div>
+          <div style="background:var(--emerald-bg); padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">NUEVO SALDO</div>
+            <div class="font-bold tabular mt-2" style="font-size:22px; color:var(--emerald-text);">${remaining}</div>
+            <div class="text-subtle" style="font-size:12px;">En ${lot.chamber}</div>
+          </div>
+        </div>
+        <div class="flex justify-between text-subtle" style="font-size:12px; margin-bottom:6px;">
+          <span>Capacidad retenida post-despacho</span>
+          <strong class="tabular">${remainPct}%</strong>
+        </div>
+        <div class="progress-track mb-4">
+          <div class="progress-fill" style="width:${remainPct}%"></div>
+        </div>
+        <div class="alert-banner" style="padding:10px 12px;">
+          <div style="font-size:12.5px;">
+            <strong>${remaining === 0 ? "Lote quedará completamente despachado" : "Espacio optimizado"}</strong>:
+            ${remaining === 0 ? "La posición quedará libre para nuevo ingreso." : `Quedarán ${remaining} ${lot.unit} en ${lot.chamber} (${lot.row}).`}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderUbicacionesView() {
+      const totalCapacity = state.chambers.reduce((s, c) => s + c.capacity, 0);
+      const totalUnits = state.lots.reduce((s, l) => s + l.qty, 0);
+      document.getElementById("loc-total-occupancy").textContent = Math.min(100, Math.round((totalUnits / totalCapacity) * 100)) + "%";
+
+      document.querySelectorAll("#loc-chamber-tabs .filter-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.chamber === state.selectedLocChamber);
+      });
+
+      document.getElementById("loc-map-title").textContent = "Mapa Espacial: " + state.selectedLocChamber;
+
+      const lotsInChamber = state.lots.filter(l => l.chamber === state.selectedLocChamber && l.qty > 0);
+      const aisles = [
+        { name: "Pasillo A", subtitle: "Rampa Despacho Rápido" },
+        { name: "Pasillo B", subtitle: "Almacén Central Fijo" },
+        { name: "Pasillo C", subtitle: "Zona Tránsito Pesado" }
+      ];
+      const rows = ["Fila 01", "Fila 02", "Fila 03", "Fila 04", "Fila 05", "Fila 06"];
+
+      document.getElementById("loc-spatial-map").innerHTML = aisles.map(aisle => {
+        const slotsHtml = rows.map((rowName, idx) => {
+          const lot = lotsInChamber.find(l => l.aisle === aisle.name && l.row === rowName);
+          const fCode = "F-0" + (idx + 1);
+          if (lot) {
+            const cls = lot.status === "Listo para Despacho" ? "dispatch-soon" : "occupied";
+            const selCls = lot.code === state.selectedLotCode ? "selected-slot" : "";
+            return `
+              <button type="button" class="slot-box ${cls} ${selCls}" onclick="selectLotForRelocate('${lot.code}')">
+                <div class="slot-code">${fCode}</div>
+                <div class="slot-info"><strong>${lot.code.slice(-7)}</strong><br/>${lot.qty} ${lot.unit}</div>
+              </button>
+            `;
+          }
+          return `
+            <button type="button" class="slot-box free" onclick="prefillTargetSlot('${state.selectedLocChamber}', '${aisle.name}', '${rowName}')">
+              <div class="slot-code">${fCode}</div>
+              <div class="slot-info">Disponible<br/>Libre</div>
+            </button>
+          `;
+        }).join("");
+
+        return `
+          <div style="border:1px solid var(--border); border-radius:10px; padding:12px;">
+            <div class="flex justify-between items-center" style="margin-bottom:10px;">
+              <strong style="font-size:13px;">${aisle.name} · ${aisle.subtitle}</strong>
+              <span class="text-subtle" style="font-size:12px;">6 posiciones</span>
+            </div>
+            <div class="rack-grid">${slotsHtml}</div>
+          </div>
+        `;
+      }).join("");
+
+      const relSelect = document.getElementById("rel-lot");
+      const activeLots = state.lots.filter(l => l.qty > 0);
+      relSelect.innerHTML = activeLots.map(l => `<option value="${l.code}">${l.code} (${l.chamber} · ${l.row})</option>`).join("");
+      if (activeLots.some(l => l.code === state.selectedLotCode)) {
+        relSelect.value = state.selectedLotCode;
+      }
+
+      document.getElementById("loc-table-tbody").innerHTML = lotsInChamber.length
+        ? lotsInChamber.map(l => `
+          <tr>
+            <td class="tabular font-semibold">${l.code}</td>
+            <td><span class="badge ${speciesBadgeClass(l.species)}"><span class="dot"></span>${l.variety}</span></td>
+            <td class="tabular font-semibold">${l.qty} ${l.unit}</td>
+            <td>${l.chamber}</td>
+            <td>${l.aisle}</td>
+            <td>${l.row}</td>
+            <td><span class="badge ${l.status === "Listo para Despacho" ? "badge-local" : "badge-export"}">${l.status}</span></td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="text-subtle">No hay lotes almacenados en ${state.selectedLocChamber}.</td></tr>`;
+    }
+
+    function selectLotForRelocate(code) {
+      state.selectedLotCode = code;
+      renderUbicacionesView();
+      showToast("Lote " + code + " seleccionado para reubicación");
+    }
+
+    function prefillTargetSlot(chamber, aisle, row) {
+      document.getElementById("rel-chamber").value = chamber;
+      document.getElementById("rel-aisle").value = aisle;
+      document.getElementById("rel-row").value = row;
+      showToast("Destino seleccionado: " + chamber + " · " + aisle + " · " + row);
+    }
+
+    function renderInventarioView() {
+      const activeLots = state.lots.filter(l => l.qty > 0);
+      const totalUnits = activeLots.reduce((s, l) => s + l.qty, 0);
+
+      const speciesTotals = { Uva: 0, Cereza: 0, Manzana: 0, Kiwi: 0 };
+      activeLots.forEach(l => {
+        speciesTotals[l.species] = (speciesTotals[l.species] || 0) + 1;
+      });
+      const totalCount = Math.max(1, activeLots.length);
+
+      document.getElementById("inv-summary-cards").innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Total Stock Planta</div>
+          <div class="kpi-value tabular">${activeLots.length}<span class="kpi-unit">Lotes</span></div>
+          <div class="kpi-note tabular">${formatNum(totalUnits)} Bins / Pallets en 4 cámaras</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Distribución por Especie</div>
+          <div class="flex gap-2 wrap mt-2" style="font-size:12.5px;">
+            <span><strong>Uva:</strong> ${Math.round((speciesTotals.Uva / totalCount) * 100)}%</span>
+            <span>·</span>
+            <span><strong>Cereza:</strong> ${Math.round((speciesTotals.Cereza / totalCount) * 100)}%</span>
+            <span>·</span>
+            <span><strong>Manzana:</strong> ${Math.round((speciesTotals.Manzana / totalCount) * 100)}%</span>
+            <span>·</span>
+            <span><strong>Kiwi:</strong> ${Math.round((speciesTotals.Kiwi / totalCount) * 100)}%</span>
+          </div>
+          <div class="progress-track mt-2"><div class="progress-fill" style="width:100%"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Sensores Atmosféricos</div>
+          <div class="kpi-value tabular" style="color:var(--cold-text);">0.2°C <span class="kpi-unit">92% HR</span></div>
+          <div class="kpi-note">Todas las cámaras en rango normal</div>
+        </div>
+      `;
+
+      const query = document.getElementById("inv-search").value.trim().toLowerCase();
+      const qFilter = document.getElementById("inv-filter-quality").value;
+      const cFilter = document.getElementById("inv-filter-chamber").value;
+      const sFilter = document.getElementById("inv-filter-status").value;
+
+      const filtered = activeLots.filter(l => {
+        if (state.invSpeciesFilter !== "Todas" && l.species !== state.invSpeciesFilter) return false;
+        if (qFilter !== "Todas" && l.quality !== qFilter) return false;
+        if (cFilter !== "Todas" && l.chamber !== cFilter) return false;
+        if (sFilter !== "Todos" && l.status !== sFilter) return false;
+        if (query && !(l.code.toLowerCase().includes(query) || l.rfid.toLowerCase().includes(query) || l.producer.toLowerCase().includes(query) || l.variety.toLowerCase().includes(query))) {
+          return false;
+        }
+        return true;
+      });
+
+      document.getElementById("inv-table-tbody").innerHTML = filtered.length
+        ? filtered.map(l => `
+          <tr>
+            <td>
+              <div class="tabular font-bold">${l.code}</div>
+              <div class="text-subtle tabular" style="font-size:11.5px;">${l.rfid}</div>
+            </td>
+            <td>
+              <span class="badge ${speciesBadgeClass(l.species)}"><span class="dot"></span>${l.variety}</span>
+              <div class="text-subtle mt-2" style="font-size:12px;">${l.producer}</div>
+            </td>
+            <td class="text-right tabular">
+              <div class="font-bold">${l.qty} ${l.unit}</div>
+              <div class="text-subtle" style="font-size:12px;">${formatNum(lotWeightKg(l))} kg</div>
+            </td>
+            <td><span class="badge ${qualityBadgeClass(l.quality)}">${l.quality}</span></td>
+            <td>${l.chamber}</td>
+            <td>${l.aisle} · ${l.row}</td>
+            <td><span class="badge ${l.status === "Listo para Despacho" ? "badge-local" : "badge-export"}">${l.status}</span></td>
+            <td class="text-right">
+              <div class="flex gap-2" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openLotDetail('${l.code}')">Ficha</button>
+                <button type="button" class="btn btn-soft btn-sm" onclick="openDispatchForLot('${l.code}')">Salir</button>
+              </div>
+            </td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="8" class="text-subtle" style="text-align:center; padding:24px;">No se encontraron lotes con los filtros seleccionados.</td></tr>`;
+    }
+
+    function renderSupervisorDashboard() {
+      const activeLots = state.lots.filter(l => l.qty > 0);
+      const totalKg = activeLots.reduce((s, l) => s + lotWeightKg(l), 0);
+      const totalBins = activeLots.filter(l => l.unit === "Bins").reduce((s, l) => s + l.qty, 0);
+      const totalPallets = activeLots.filter(l => l.unit === "Pallets").reduce((s, l) => s + l.qty, 0);
+
+      document.getElementById("sup-kpis").innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Total Fruta Almacenada</div>
+          <div class="kpi-value tabular">${formatNum(totalKg)}<span class="kpi-unit">kg</span></div>
+          <div class="kpi-note">${activeLots.length} lotes activos en cámaras</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Listos para Selección</div>
+          <div class="kpi-value tabular">${activeLots.filter(l => l.status !== "En Línea Packing").length}<span class="kpi-unit">Lotes</span></div>
+          <div class="kpi-note">En reposo térmico óptimo</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Bins en Cámaras</div>
+          <div class="kpi-value tabular">${formatNum(totalBins)}<span class="kpi-unit">Bins</span></div>
+          <div class="kpi-note">Materia prima esperando proceso</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pallets Terminados</div>
+          <div class="kpi-value tabular">${formatNum(totalPallets)}<span class="kpi-unit">Pallets</span></div>
+          <div class="kpi-note">Listos para despacho portuario</div>
+        </div>
+      `;
+
+      const speciesWeights = { Uva: 0, Cereza: 0, Manzana: 0, Kiwi: 0 };
+      activeLots.forEach(l => { speciesWeights[l.species] += lotWeightKg(l); });
+      const maxKg = Math.max(1, totalKg);
+
+      document.getElementById("sup-species-bars").innerHTML = Object.entries(speciesWeights).map(([sp, kg]) => {
+        const pct = Math.round((kg / maxKg) * 100);
+        return `
+          <div>
+            <div class="flex justify-between" style="margin-bottom:4px; font-size:13px;">
+              <strong>${sp}</strong>
+              <span class="tabular"><strong>${formatNum(kg)} kg</strong> (${pct}%)</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+      }).join("");
+
+      renderDonutInto("sup-quality-donut", activeLots);
+
+      document.getElementById("sup-movements-tbody").innerHTML = state.movements.slice(0, 5).map(m => `
+        <tr>
+          <td class="tabular text-subtle">${m.time}</td>
+          <td><span class="badge ${m.type === "Ingreso" ? "badge-export" : "badge-local"}">${m.type}</span></td>
+          <td>${m.originDest}</td>
+          <td><strong>${m.variety}</strong><div class="text-subtle tabular" style="font-size:11.5px;">${m.code}</div></td>
+          <td class="text-right tabular font-semibold">${m.qty}</td>
+          <td class="text-subtle">${m.location}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDonutInto(containerId, lotsList) {
+      const totalKg = Math.max(1, lotsList.reduce((s, l) => s + lotWeightKg(l), 0));
+      const expKg = lotsList.filter(l => l.quality === "Exportación").reduce((s, l) => s + lotWeightKg(l), 0);
+      const locKg = lotsList.filter(l => l.quality === "Mercado Local").reduce((s, l) => s + lotWeightKg(l), 0);
+      const indKg = lotsList.filter(l => l.quality === "Industrial").reduce((s, l) => s + lotWeightKg(l), 0);
+
+      const expPct = Math.round((expKg / totalKg) * 100);
+      const locPct = Math.round((locKg / totalKg) * 100);
+      const indPct = Math.max(0, 100 - expPct - locPct);
+
+      const C = 2 * Math.PI * 52;
+      const expLen = (expPct / 100) * C;
+      const locLen = (locPct / 100) * C;
+      const indLen = (indPct / 100) * C;
+
+      document.getElementById(containerId).innerHTML = `
+        <svg width="140" height="140" viewBox="0 0 140 140" aria-label="Distribución de calidad comercial">
+          <circle cx="70" cy="70" r="52" fill="none" stroke="#e2e8f0" stroke-width="18"></circle>
+          <circle cx="70" cy="70" r="52" fill="none" stroke="#059669" stroke-width="18"
+            stroke-dasharray="${expLen} ${C}" stroke-dashoffset="0" transform="rotate(-90 70 70)"></circle>
+          <circle cx="70" cy="70" r="52" fill="none" stroke="#143d32" stroke-width="18"
+            stroke-dasharray="${locLen} ${C}" stroke-dashoffset="${-expLen}" transform="rotate(-90 70 70)"></circle>
+          <circle cx="70" cy="70" r="52" fill="none" stroke="#94a3b8" stroke-width="18"
+            stroke-dasharray="${indLen} ${C}" stroke-dashoffset="${-(expLen + locLen)}" transform="rotate(-90 70 70)"></circle>
+          <text x="70" y="67" text-anchor="middle" font-size="20" font-weight="700" fill="#0b1c30">${expPct}%</text>
+          <text x="70" y="84" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">EXPORTACIÓN</text>
+        </svg>
+        <div class="flex" style="flex-direction:column; gap:10px; flex:1; min-width:190px;">
+          <div class="flex justify-between" style="font-size:13px;">
+            <span><span class="dot" style="color:#059669"></span> Exportación Premium</span>
+            <strong class="tabular">${formatNum(expKg)} kg (${expPct}%)</strong>
+          </div>
+          <div class="flex justify-between" style="font-size:13px;">
+            <span><span class="dot" style="color:#143d32"></span> Mercado Local</span>
+            <strong class="tabular">${formatNum(locKg)} kg (${locPct}%)</strong>
+          </div>
+          <div class="flex justify-between" style="font-size:13px;">
+            <span><span class="dot" style="color:#94a3b8"></span> Industrial / Pulpa</span>
+            <strong class="tabular">${formatNum(indKg)} kg (${indPct}%)</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderConsultaView() {
+      const sp = document.getElementById("con-species").value;
+      const ql = document.getElementById("con-quality").value;
+      const ch = document.getElementById("con-chamber").value;
+      const q = document.getElementById("con-search").value.trim().toLowerCase();
+
+      const filtered = state.lots.filter(l => {
+        if (l.qty <= 0) return false;
+        if (sp !== "Todas" && l.species !== sp) return false;
+        if (ql !== "Todas" && l.quality !== ql) return false;
+        if (ch !== "Todas" && l.chamber !== ch) return false;
+        if (q && !l.code.toLowerCase().includes(q) && !l.variety.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      document.getElementById("con-count-label").textContent = `Mostrando ${filtered.length} lotes disponibles`;
+
+      const expCount = filtered.filter(l => l.quality === "Exportación").length;
+      const locCount = filtered.filter(l => l.quality === "Mercado Local").length;
+      const indCount = filtered.filter(l => l.quality === "Industrial").length;
+      const totalKg = filtered.reduce((s, l) => s + lotWeightKg(l), 0);
+
+      document.getElementById("con-summary-cards").innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Exportación Premium</div>
+          <div class="kpi-value tabular">${expCount} <span class="kpi-unit">Lotes</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Mercado Local</div>
+          <div class="kpi-value tabular">${locCount} <span class="kpi-unit">Lotes</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Industrial / Pulpa</div>
+          <div class="kpi-value tabular">${indCount} <span class="kpi-unit">Lotes</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Peso Filtrado Total</div>
+          <div class="kpi-value tabular">${formatNum(totalKg)} <span class="kpi-unit">kg</span></div>
+        </div>
+      `;
+
+      document.getElementById("con-table-tbody").innerHTML = filtered.length
+        ? filtered.map(l => `
+          <tr class="clickable" onclick="openLotDetail('${l.code}')">
+            <td>
+              <div class="tabular font-bold">${l.code}</div>
+              <div class="text-subtle" style="font-size:12px;">${l.producer}</div>
+            </td>
+            <td><span class="badge ${speciesBadgeClass(l.species)}"><span class="dot"></span>${l.variety}</span></td>
+            <td>${l.caliber}</td>
+            <td><span class="badge ${qualityBadgeClass(l.quality)}">${l.quality}</span></td>
+            <td class="tabular">${l.harvestDate}<div class="text-subtle" style="font-size:12px;">${l.daysInCold} días en frío</div></td>
+            <td class="text-right tabular"><strong>${l.qty} ${l.unit}</strong><div class="text-subtle" style="font-size:12px;">${formatNum(lotWeightKg(l))} kg</div></td>
+            <td class="text-right"><button type="button" class="btn btn-secondary btn-sm">Ver Ficha</button></td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="7" class="text-subtle" style="text-align:center; padding:24px;">No hay lotes que coincidan con la búsqueda.</td></tr>`;
+    }
+
+    function renderDetailView() {
+      const lot = state.lots.find(l => l.code === state.selectedLotCode) || state.lots[0];
+      if (!lot) return;
+
+      document.getElementById("detail-title").textContent = lot.code;
+      document.getElementById("detail-subtitle").textContent = `${lot.variety} · Calidad ${lot.quality} · Productor ${lot.producer}`;
+      document.getElementById("detail-status-box").innerHTML = `
+        <div style="background:var(--forest); color:#fff; padding:12px 18px; border-radius:12px;">
+          <div style="font-size:11px; opacity:0.8;">CONDICIÓN OPERATIVA</div>
+          <div class="font-bold" style="font-size:15px;">${lot.status}</div>
+        </div>
+      `;
+
+      document.getElementById("detail-agronomic-card").innerHTML = `
+        <h2 class="card-title mb-4">Información de Origen y Agronómica</h2>
+        <div style="background:#f8fafc; padding:14px; border-radius:8px; margin-bottom:14px;">
+          <div class="text-subtle" style="font-size:11px; font-weight:700;">PRODUCTOR DE ORIGEN CERTIFICADO</div>
+          <div class="font-bold" style="font-size:16px; margin-top:4px;">${lot.producer}</div>
+        </div>
+        <div class="grid-3 mb-4">
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">VARIEDAD</div>
+            <div class="font-bold mt-2">${lot.variety}</div>
+          </div>
+          <div style="background:#f8fafc; padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">CALIBRE</div>
+            <div class="font-bold mt-2">${lot.caliber}</div>
+          </div>
+          <div style="background:var(--emerald-bg); padding:12px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px; font-weight:700;">GRADOS BRIX</div>
+            <div class="font-bold tabular mt-2" style="color:var(--emerald-text);">${lot.brix}</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div><span class="text-subtle">Fecha de cosecha:</span> <strong>${lot.harvestDate}</strong></div>
+          <div><span class="text-subtle">Días en frío:</span> <strong class="tabular">${lot.daysInCold} días</strong></div>
+        </div>
+      `;
+
+      const pctAvail = Math.round((lot.qty / Math.max(1, lot.initialQty)) * 100);
+      document.getElementById("detail-balance-card").innerHTML = `
+        <h2 class="card-title mb-4">Balance de Inventario</h2>
+        <div class="grid-2 mb-4">
+          <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px;">INGRESO INICIAL</div>
+            <div class="font-bold tabular">${lot.initialQty} ${lot.unit}</div>
+          </div>
+          <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px;">DESPACHADOS</div>
+            <div class="font-bold tabular">${Math.max(0, lot.initialQty - lot.qty)} ${lot.unit}</div>
+          </div>
+        </div>
+        <div style="background:var(--emerald-bg); padding:14px; border-radius:8px; margin-bottom:10px;">
+          <div class="text-subtle" style="font-size:11px; font-weight:700;">CANTIDAD DISPONIBLE ACTUAL</div>
+          <div class="font-bold tabular" style="font-size:24px; color:var(--emerald-text);">${lot.qty} ${lot.unit} (${formatNum(lotWeightKg(lot))} kg)</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pctAvail}%"></div></div>
+      `;
+
+      const ch = state.chambers.find(c => c.id === lot.chamber) || state.chambers[0];
+      document.getElementById("detail-cold-card").innerHTML = `
+        <h2 class="card-title mb-4">Ubicación Física &amp; Sensores</h2>
+        <div class="grid-2 mb-4">
+          <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px;">TEMP. PULPA</div>
+            <div class="font-bold tabular" style="font-size:18px; color:var(--cold-text);">${ch.temp}</div>
+          </div>
+          <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+            <div class="text-subtle" style="font-size:11px;">HUMEDAD</div>
+            <div class="font-bold tabular" style="font-size:18px;">${ch.humidity}</div>
+          </div>
+        </div>
+        <div class="text-muted" style="font-size:13px;">
+          <strong>${lot.chamber}</strong> · ${lot.aisle} · ${lot.row}<br/>
+          Tag RFID: <strong class="tabular">${lot.rfid}</strong>
+        </div>
+      `;
+
+      document.getElementById("detail-dispatch-btn").onclick = () => openDispatchForLot(lot.code);
+      document.getElementById("detail-assign-btn").onclick = () => {
+        lot.status = "En Línea Packing";
+        state.line2Assigned = true;
+        renderDetailView();
+        showToast("Lote " + lot.code + " asignado a Línea de Packing");
+      };
+    }
+
+    function renderEstadisticasView() {
+      const spFilter = document.getElementById("stats-filter-species").value;
+      const activeLots = state.lots.filter(l => l.qty > 0 && (spFilter === "Todas" || l.species === spFilter));
+
+      const speciesGroups = ["Uva", "Cereza", "Manzana", "Kiwi"];
+      const spWeights = speciesGroups.map(sp => ({
+        name: sp,
+        kg: activeLots.filter(l => l.species === sp).reduce((s, l) => s + lotWeightKg(l), 0)
+      }));
+      const maxSpKg = Math.max(1, ...spWeights.map(x => x.kg));
+
+      document.getElementById("stats-species-chart").innerHTML = `
+        <div class="vchart-wrap" style="height:200px;">
+          ${spWeights.map(x => {
+            const h = Math.max(8, Math.round((x.kg / maxSpKg) * 140));
+            return `
+              <div class="vchart-col">
+                <div class="vbar species" style="height:${h}px;"></div>
+                <div class="font-bold tabular" style="font-size:13px;">${formatNum(x.kg)} kg</div>
+                <div class="text-subtle" style="font-size:12px;">${x.name}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+      renderDonutInto("stats-quality-donut", activeLots);
+
+      document.getElementById("stats-chambers-list").innerHTML = state.chambers.map(ch => {
+        const occ = getChamberOccupancy(ch.id);
+        return `
+          <div>
+            <div class="flex justify-between" style="margin-bottom:4px; font-size:13px;">
+              <span><strong>${ch.name}</strong> · ${ch.focus} (${ch.temp})</span>
+              <strong class="tabular">${occ.pct}% (${occ.lotsCount} lotes)</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill ${occ.pct >= 85 ? "amber" : ""}" style="width:${occ.pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const maxFlow = Math.max(...WEEKLY_FLOW.map(d => Math.max(d.inKg, d.outKg)));
+      document.getElementById("stats-weekly-bars").innerHTML = WEEKLY_FLOW.map(d => {
+        const inH = Math.round((d.inKg / maxFlow) * 135);
+        const outH = Math.round((d.outKg / maxFlow) * 135);
+        return `
+          <div class="vchart-col">
+            <div class="vchart-bars">
+              <div class="vbar in" style="height:${inH}px;" title="Ingreso ${d.inKg}t"></div>
+              <div class="vbar out" style="height:${outH}px;" title="Salida ${d.outKg}t"></div>
+            </div>
+            <div class="text-subtle font-semibold" style="font-size:12px;">${d.day}</div>
+          </div>
+        `;
+      }).join("");
+
+      const sumIn = WEEKLY_FLOW.reduce((s, d) => s + d.inKg, 0) * 1000;
+      const sumOut = WEEKLY_FLOW.reduce((s, d) => s + d.outKg, 0) * 1000;
+      document.getElementById("stats-weekly-totals").innerHTML = `
+        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+          <div class="text-subtle" style="font-size:11px; font-weight:700;">INGRESOS 7D</div>
+          <div class="font-bold tabular">${formatNum(sumIn)} kg</div>
+        </div>
+        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+          <div class="text-subtle" style="font-size:11px; font-weight:700;">DESPACHOS 7D</div>
+          <div class="font-bold tabular">${formatNum(sumOut)} kg</div>
+        </div>
+        <div style="background:var(--emerald-bg); padding:10px; border-radius:8px;">
+          <div class="text-subtle" style="font-size:11px; font-weight:700;">SALDO NETO</div>
+          <div class="font-bold tabular" style="color:var(--emerald-text);">+${formatNum(sumIn - sumOut)} kg</div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // EVENTOS E INTERACCIONES
+    // =========================================================================
+    document.getElementById("toggle-pass-btn").addEventListener("click", () => {
+      const inp = document.getElementById("login-pass");
+      inp.type = inp.type === "password" ? "text" : "password";
+    });
+
+    function enterApp() {
+      const plantVal = document.getElementById("login-plant").value;
+      state.plant = plantVal;
+      state.loggedIn = true;
+      document.getElementById("sidebar-plant-name").textContent = plantVal.split("–")[0].trim();
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("app-shell").classList.remove("hidden");
+      setRole("bodega");
+    }
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      enterApp();
+      showToast("Sesión iniciada en memoria (sin guardado de datos)");
+    });
+
+    document.getElementById("rfid-login-btn").addEventListener("click", () => {
+      enterApp();
+      showToast("Credencial RFID verificada · Bienvenido");
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      state.loggedIn = false;
+      document.getElementById("app-shell").classList.add("hidden");
+      document.getElementById("view-login").classList.remove("hidden");
+    });
+
+    document.getElementById("mobile-menu-btn").addEventListener("click", () => {
+      document.getElementById("sidebar").classList.toggle("open");
+    });
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => navigateTo(btn.dataset.view));
+    });
+
+    document.querySelectorAll(".role-btn").forEach(btn => {
+      btn.addEventListener("click", () => setRole(btn.dataset.role));
+    });
+
+    // Escáner rápido RFID en Dashboard Bodega
+    document.getElementById("quick-rfid-search").addEventListener("click", () => {
+      const val = document.getElementById("quick-rfid-input").value.trim().toLowerCase();
+      const resEl = document.getElementById("quick-rfid-result");
+      if (!val) {
+        resEl.innerHTML = `<div class="text-subtle" style="font-size:12.5px;">Ingrese un código o tag para buscar.</div>`;
+        return;
+      }
+      const found = state.lots.find(l => l.code.toLowerCase().includes(val) || l.rfid.toLowerCase().includes(val));
+      if (found) {
+        resEl.innerHTML = `
+          <div style="background:var(--emerald-bg); padding:10px; border-radius:8px; font-size:12.5px;">
+            <strong>${found.code}</strong> · ${found.variety}<br/>
+            Ubicación: <strong>${found.chamber} · ${found.aisle} · ${found.row}</strong><br/>
+            <button type="button" class="btn btn-primary btn-sm mt-2" onclick="openLotDetail('${found.code}')">Abrir Ficha</button>
+          </div>
+        `;
+      } else {
+        resEl.innerHTML = `<div style="background:var(--amber-bg); padding:10px; border-radius:8px; font-size:12.5px;">No se encontró ningún lote con "${val}".</div>`;
+      }
+    });
+
+    document.getElementById("quick-rfid-clear").addEventListener("click", () => {
+      document.getElementById("quick-rfid-input").value = "";
+      document.getElementById("quick-rfid-result").innerHTML = "";
+    });
+
+    document.getElementById("btn-check-sensors").addEventListener("click", () => {
+      showToast("Sensores verificados: Cámara 02 estabilizada en 0.0°C");
+    });
+
+    document.getElementById("btn-snooze-alert").addEventListener("click", () => {
+      document.getElementById("cold-alert-card").classList.add("hidden");
+      showToast("Aviso pospuesto durante este turno");
+    });
+
+    // Registro de Ingreso
+    document.getElementById("in-date").value = new Date().toISOString().split("T")[0];
+
+    document.querySelectorAll("#in-species-grid .option-card").forEach(card => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll("#in-species-grid .option-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        state.inFormSpecies = card.dataset.species;
+        state.inFormVariety = card.dataset.variety;
+        const prefix = state.inFormSpecies.slice(0, 3).toUpperCase();
+        const randNum = String(Math.floor(100 + Math.random() * 899));
+        document.getElementById("in-code").value = `LOT-2024-${prefix}-${randNum}`;
+      });
+    });
+
+    document.querySelectorAll("#in-quality-grid .option-card").forEach(card => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll("#in-quality-grid .option-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        state.inFormQuality = card.dataset.quality;
+      });
+    });
+
+    document.querySelectorAll("#in-slot-grid .slot-box.free").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#in-slot-grid .slot-box").forEach(b => b.classList.remove("selected-slot"));
+        btn.classList.add("selected-slot");
+        state.inFormSlot = btn.dataset.slot;
+      });
+    });
+
+    document.getElementById("btn-sim-rfid").addEventListener("click", () => {
+      const rand = Math.floor(1000 + Math.random() * 8999);
+      document.getElementById("in-rfid").value = `#RFID-${rand}-CL`;
+      showToast("Tag RFID leído correctamente");
+    });
+
+    document.getElementById("in-qty").addEventListener("input", renderIngresoPreview);
+    document.getElementById("in-unit").addEventListener("change", renderIngresoPreview);
+
+    document.getElementById("in-reset-btn").addEventListener("click", () => {
+      document.getElementById("in-qty").value = 36;
+      renderIngresoPreview();
+      showToast("Formulario reiniciado");
+    });
+
+    document.getElementById("ingreso-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const newLot = {
+        code: document.getElementById("in-code").value.trim(),
+        rfid: document.getElementById("in-rfid").value.trim(),
+        species: state.inFormSpecies,
+        variety: state.inFormVariety,
+        producer: document.getElementById("in-producer").value,
+        caliber: document.getElementById("in-caliber").value,
+        brix: "19.0° Bx",
+        initialQty: Number(document.getElementById("in-qty").value) || 1,
+        qty: Number(document.getElementById("in-qty").value) || 1,
+        unit: document.getElementById("in-unit").value,
+        quality: state.inFormQuality,
+        harvestDate: document.getElementById("in-date").value,
+        daysInCold: 0,
+        chamber: document.getElementById("in-chamber").value,
+        aisle: document.getElementById("in-aisle").value,
+        row: document.getElementById("in-row").value,
+        status: "Almacenado Óptimo"
+      };
+
+      state.lots.unshift(newLot);
+      state.movements.unshift({
+        time: currentTimeStr(),
+        type: "Ingreso",
+        code: newLot.code,
+        variety: newLot.variety,
+        qty: `${newLot.qty} ${newLot.unit}`,
+        originDest: newLot.producer,
+        location: `${newLot.chamber} · ${newLot.row}`
+      });
+
+      showToast(`Ingreso registrado: ${newLot.code} (${newLot.qty} ${newLot.unit})`);
+      navigateTo("bodega-dashboard");
+    });
+
+    // Registro de Salida
+    document.getElementById("out-lot-select").addEventListener("change", renderSalidaView);
+    document.getElementById("out-qty").addEventListener("input", renderSalidaView);
+
+    document.getElementById("out-half-btn").addEventListener("click", () => {
+      const code = document.getElementById("out-lot-select").value;
+      const lot = state.lots.find(l => l.code === code);
+      if (lot) {
+        document.getElementById("out-qty").value = Math.max(1, Math.floor(lot.qty / 2));
+        renderSalidaView();
+      }
+    });
+
+    document.getElementById("out-all-btn").addEventListener("click", () => {
+      const code = document.getElementById("out-lot-select").value;
+      const lot = state.lots.find(l => l.code === code);
+      if (lot) {
+        document.getElementById("out-qty").value = lot.qty;
+        renderSalidaView();
+      }
+    });
+
+    document.getElementById("salida-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = document.getElementById("out-lot-select").value;
+      const lot = state.lots.find(l => l.code === code);
+      if (!lot) return;
+
+      const qtyOut = Math.min(lot.qty, Math.max(1, Number(document.getElementById("out-qty").value) || 0));
+      lot.qty -= qtyOut;
+      if (lot.qty === 0) lot.status = "Despachado";
+
+      state.movements.unshift({
+        time: currentTimeStr(),
+        type: "Salida",
+        code: lot.code,
+        variety: lot.variety,
+        qty: `${qtyOut} ${lot.unit}`,
+        originDest: document.getElementById("out-dest").value,
+        location: "Andén Despacho"
+      });
+
+      showToast(`Salida confirmada: -${qtyOut} ${lot.unit} de ${lot.code}`);
+      navigateTo("bodega-dashboard");
+    });
+
+    // Gestión de Ubicaciones
+    document.querySelectorAll("#loc-chamber-tabs .filter-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.selectedLocChamber = btn.dataset.chamber;
+        renderUbicacionesView();
+      });
+    });
+
+    document.getElementById("relocate-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = document.getElementById("rel-lot").value;
+      const lot = state.lots.find(l => l.code === code);
+      if (!lot) return;
+
+      lot.chamber = document.getElementById("rel-chamber").value;
+      lot.aisle = document.getElementById("rel-aisle").value;
+      lot.row = document.getElementById("rel-row").value;
+      state.selectedLocChamber = lot.chamber;
+
+      renderUbicacionesView();
+      showToast(`Lote ${lot.code} reubicado en ${lot.chamber} · ${lot.aisle} · ${lot.row}`);
+    });
+
+    // Inventario General filtros
+    document.querySelectorAll("#inv-species-pills .filter-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#inv-species-pills .filter-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.invSpeciesFilter = btn.dataset.species;
+        renderInventarioView();
+      });
+    });
+
+    ["inv-search", "inv-filter-quality", "inv-filter-chamber", "inv-filter-status"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderInventarioView);
+      document.getElementById(id).addEventListener("change", renderInventarioView);
+    });
+
+    // Supervisor FIFO
+    document.getElementById("fifo-snooze-btn").addEventListener("click", () => {
+      document.getElementById("fifo-banner").classList.add("hidden");
+      showToast("Recomendación FIFO pospuesta");
+    });
+
+    document.getElementById("fifo-assign-btn").addEventListener("click", () => {
+      const target = state.lots.find(l => l.code === "LOT-2024-CRZ-042") || state.lots[0];
+      if (target) target.status = "En Línea Packing";
+      document.getElementById("line2-status-badge").textContent = "Activa · 3.900 kg/hr";
+      document.getElementById("line2-status-badge").className = "badge badge-export";
+      document.getElementById("line2-progress").style.width = "78%";
+      document.getElementById("line2-progress").className = "progress-fill";
+      document.getElementById("fifo-banner").classList.add("hidden");
+      renderSupervisorDashboard();
+      showToast("Lote asignado a Línea 2 correctamente");
+    });
+
+    // Consulta de Inventario (Supervisor)
+    ["con-species", "con-quality", "con-chamber", "con-search"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderConsultaView);
+      document.getElementById(id).addEventListener("change", renderConsultaView);
+    });
+
+    document.getElementById("con-clear-btn").addEventListener("click", () => {
+      document.getElementById("con-species").value = "Todas";
+      document.getElementById("con-quality").value = "Todas";
+      document.getElementById("con-chamber").value = "Todas";
+      document.getElementById("con-search").value = "";
+      renderConsultaView();
+    });
+
+    document.getElementById("btn-export-csv").addEventListener("click", () => {
+      const headers = ["Codigo", "Especie", "Variedad", "Productor", "Calibre", "Calidad", "Cantidad", "Unidad", "Camara", "Ubicacion"];
+      const rows = state.lots.filter(l => l.qty > 0).map(l => [
+        l.code, l.species, l.variety, l.producer, l.caliber, l.quality, l.qty, l.unit, l.chamber, `${l.aisle} ${l.row}`
+      ]);
+      const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "inventario_sgi_packing.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Planilla CSV descargada");
+    });
+
+    // Detalle Lote regreso
+    document.getElementById("detail-back-btn").addEventListener("click", () => {
+      navigateTo(state.previousView || "consulta-stock");
+    });
+
+    // Estadísticas filtro
+    document.getElementById("stats-filter-species").addEventListener("change", renderEstadisticasView);
+  </script>
+</body>
+</html>
